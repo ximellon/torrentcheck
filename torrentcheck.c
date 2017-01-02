@@ -16,6 +16,8 @@
 #include <malloc.h>
 #include <string.h>
 
+#include <iconv.h>
+
 // Begin required for SHA1
 typedef unsigned char *POINTER;
 typedef unsigned int UINT4;
@@ -37,6 +39,7 @@ extern void SHAFinal(BYTE *output, SHA_CTX *);
 // For filter mode only, torrent buffer length depends on the torrent
 #define inputBufLen 262144
 
+// Portability
 #ifdef NATIVE64BIT
 typedef long int INT64;
 #else
@@ -357,6 +360,13 @@ int main(int argc,char* argv[]) {
 	char p64Buf1[32];
 	char p64Buf2[32];
 	SHA_CTX sha1ctx;
+  //
+  char* encoding = NULL;
+  iconv_t convDescriptor;
+  char *inPtr, *outPtr;
+  size_t inBytesLeft, outBytesLeft;
+  char filePathUTF8[1024];
+  int filePathUTF8Len;
 
 	// Check the build for a working hasher and correct word lengths
 	SHAInit(&sha1ctx);
@@ -372,13 +382,13 @@ int main(int argc,char* argv[]) {
 		return 3;
 	}
 	if ((sizeof(INT64) != 8) || (sizeof(UINT4) != 4)) {
-		printf("Wrong word length UINT4=%i INT64=%i - this build is faulty!\n",sizeof(UINT4),sizeof(INT64));
+		printf("Wrong word length UINT4=%zu INT64=%zu - this build is faulty!\n",sizeof(UINT4),sizeof(INT64));
 		return 3;
 	}
 
 	for(i=1;i<argc;i++) {
-		if ((strcmp(argv[i],"-t") == 0) && (i+1 < argc)) {
-			i++; torrentFile = argv[i];
+		if ((strcmp(argv[i],"-e") == 0) && (i+1 < argc)) {
+			i++; encoding = argv[i];
 		} else if ((strcmp(argv[i],"-p") == 0) && (i+1 < argc)) {
 			i++; contentPath = argv[i]; contentPathLen = strlen(contentPath);
 		} else if (strcmp(argv[i],"-n") == 0) {
@@ -397,9 +407,11 @@ int main(int argc,char* argv[]) {
 				filterHash = argv[i];
 			}
 		} else {
-			printf("Unrecognized option %s in command line at position %i\n",argv[i],i);
-			torrentFile = NULL;
-			break;
+			if (torrentFile == NULL) {
+				torrentFile = argv[i];
+			} else {
+				printf("Unrecognized option %s in command line at position %i\n",argv[i],i);
+			}
 		}
 	}
 
@@ -465,13 +477,20 @@ int main(int argc,char* argv[]) {
 		return 2;
 	}
 
-	ofs = beFindInDict(torrent,torrentLen,torrentInfo,"name");
+	// name.utf-8 > name
+	ofs = beFindInDict(torrent,torrentLen,torrentInfo,"name.utf-8");
 	if (ofs >= 0) {
 		ofs = beParseString(torrent,torrentLen,ofs,&rootName,&rootNameLen);
 	}
 	if (ofs < 0) {
-		printf("Unable to read \"name\" from torrent\n");
-		return 2;
+		ofs = beFindInDict(torrent,torrentLen,torrentInfo,"name");
+		if (ofs >= 0) {
+			ofs = beParseString(torrent,torrentLen,ofs,&rootName,&rootNameLen);
+		}
+		else {
+			printf("Unable to read \"name\" from torrent\n");
+			return 2;
+		}
 	}
 
 	ofs = beFindInDict(torrent,torrentLen,torrentInfo,"private");
@@ -499,7 +518,7 @@ int main(int argc,char* argv[]) {
 
 		fileRecordList = malloc(numFiles * sizeof(fileRecord));
 		if (torrent == NULL) {
-			printf("Unable to malloc %i bytes for file record list\n",numFiles * sizeof(fileRecord));
+			printf("Unable to malloc %zu bytes for file record list\n",numFiles * sizeof(fileRecord));
 			return 2;
 		}
 
@@ -518,10 +537,14 @@ int main(int argc,char* argv[]) {
 				printf("Unable to read \"length\" from torrent\n");
 				return 2;
 			}
-			ofs = beFindInDict(torrent,torrentLen,thisFileOffset,"path");
+			// path.utf-8 > path
+			ofs = beFindInDict(torrent,torrentLen,thisFileOffset,"path.utf-8");
 			if (ofs < 0) {
-				printf("Unable to read \"path\" from torrent\n");
-				return 2;
+				ofs = beFindInDict(torrent,torrentLen,thisFileOffset,"path");
+				if (ofs < 0) {
+					printf("Unable to read \"path\" from torrent\n");
+					return 2;
+				}
 			}
 
 			filePathOfs = 0;
@@ -548,10 +571,41 @@ int main(int argc,char* argv[]) {
 				filePathOfs += fileNameLen;
 				filePath[filePathOfs] = 0;
 			}
+
+      // encoding
+      if(encoding != NULL) {
+        inPtr = filePath, outPtr = filePathUTF8;
+        inBytesLeft = strlen(filePath), outBytesLeft = 1024;
+        if((convDescriptor = iconv_open("utf-8", encoding)) == (iconv_t)-1) {
+          return -1;
+        }
+
+        if(iconv(convDescriptor, &inPtr, &inBytesLeft, &outPtr, &outBytesLeft) == -1) {
+          // fail
+          iconv_close(convDescriptor);
+          return -1;
+        }
+
+        // success
+        filePathUTF8Len = 1024 - outBytesLeft;
+        // *(outPtr + filePathUTF8Len) = '\0';
+        iconv_close(convDescriptor);
+
+        if(filePathUTF8Len >= filePathMax) {
+          filePathMax *= 2;
+          filePath = realloc(filePath,filePathMax);
+          if (filePath == NULL) {
+            printf("Unable to realloc %i bytes for file path\n",filePathMax);
+            return 2;
+          }
+        }
+        memcpy(filePath, filePathUTF8, filePathUTF8Len);
+        filePath[filePathUTF8Len] = '\0';
+      }
 			
 			fileRecordList[currentFile].filePath = malloc(strlen(filePath)+1);
 			if (fileRecordList[currentFile].filePath == NULL) {
-				printf("Unable to malloc %i bytes for file path\n",strlen(filePath)+1);
+				printf("Unable to malloc %zu bytes for file path\n",strlen(filePath)+1);
 				return 2;
 			}
 			strcpy(fileRecordList[currentFile].filePath,filePath);
@@ -639,7 +693,7 @@ int main(int argc,char* argv[]) {
 	if (contentPath != NULL) {
 		pieceBuf = malloc(pieceLen);
 		if (pieceBuf == NULL) { 
-			printf("Unable to malloc %i bytes for piece buffer\n",pieceLen);
+			printf("Unable to malloc %lld bytes for piece buffer\n",pieceLen);
 			return 2;
 		}
 	}
