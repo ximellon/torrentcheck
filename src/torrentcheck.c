@@ -529,16 +529,19 @@ int main(int argc,char* argv[])
     if (torrentFile == NULL)
     {
         printf("torrentcheck - catalog a .torrent file and optionally verify content hashes\n");
-        printf("Usage: torrentcheck -t torrent-file [-p content-path] [-n] [-h] [-c] [-d]\n");
-        printf("Options: -n suppresses progress count, -h shows all hash values,\n");
-        printf("         -c or -d uses comma or dot formatted byte counts.\n");
+        printf("Usage: torrentcheck torrent-file [-p content-path] [-n] [-h] [-c] [-d]\n");
+        printf("Options:\n");
+        printf("\t-n suppresses progress count,\n");
+        printf("\t-h shows all hash values,\n");
+        printf("\t-c or -d uses comma or dot formatted byte counts.\n");
         printf("Returns 0 if successful, nonzero return code if errors found.\n");
         printf("\n");
-        printf("Option: -sha1 [optional hash] acts as a simple SHA1 filter.\n");
+        printf("Option:\n");
+        printf("\t-sha1 [optional hash] acts as a simple SHA1 filter.\n");
         printf("If -sha1 is followed by a hex hash, the return code will be zero\n");
         printf("on match and nonzero otherwise.\n");
         printf("\n");
-        printf("V1.00 2010-12-01 Mike Ingle <inglem@pobox.com>\n");
+        printf("V1.10 2023-01-07 Mike Ingle <inglem@pobox.com>\n");
         return 3;
     }
 

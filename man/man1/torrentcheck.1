@@ -1,0 +1,45 @@
+.TH torrentcheck "1" "1.10" "07 Jan 2023" "User Manual"
+
+.SH NAME
+torrentcheck
+
+.SH DESCRIPTION
+Catalog a \fI.torrent\fR file and optionally verify content hashes
+
+.SH SYNOPSIS
+torrentcheck torrent-file [-p content-path] [-n] [-h] [-c] [-d]
+
+.SH OPTIONS
+.TP
+-p content-path
+path of content data
+.TP
+-n
+suppresses progress count
+.TP
+-h
+shows all hash values
+.TP
+-c or -d
+uses comma or dot formatted byte counts.
+
+Returns 0 if successful, nonzero return code if errors found.
+
+.TP
+-sha1 [optional hash]
+acts as a simple SHA1 filter
+
+If -sha1 is followed by a hex hash, the return code will be zero
+on match and nonzero otherwise.
+
+.SH EXAMPLE
+torrentcheck my.torrent
+ 
+.SH COPYRIGHT
+Mike Ingle <inglem@pobox.com>
+
+.SH SEE ALSO
+torreadwrite(1), ctorrent(1), aria2c(1)
+
+.SH CONTACTS
+Website: https://github.com/ximellon/torrentcheck
