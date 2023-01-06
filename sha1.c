@@ -3,14 +3,14 @@
 
 /* SHA: NIST's Secure Hash Algorithm */
 
-/*	This version written November 2000 by David Ireland of 
+/*	This version written November 2000 by David Ireland of
 	DI Management Services Pty Limited <code@di-mgt.com.au>
 
-	Adapted from code in the Python Cryptography Toolkit, 
+	Adapted from code in the Python Cryptography Toolkit,
 	version 1.0.0 by A.M. Kuchling 1995.
 */
 
-/* AM Kuchling's posting:- 
+/* AM Kuchling's posting:-
    Based on SHA code originally posted to sci.crypt by Peter Gutmann
    in message <30ajo5$oe8@ccu2.auckland.ac.nz>.
    Modified to test for endianness on creation of SHA objects by AMK.
@@ -19,7 +19,7 @@
 */
 
 /* Here's the first paragraph of Peter Gutmann's posting:
-   
+
 The following is my SHA (FIPS 180) code updated to allow use of the "fixed"
 SHA, thanks to Jim Gillogly and an anonymous contributor for the information on
 what's changed in the new version.  The fix is a simple change which involves
@@ -47,8 +47,8 @@ typedef unsigned int UINT4;
 typedef unsigned char BYTE;
 
 #ifndef TRUE
-  #define FALSE	0
-  #define TRUE	( !FALSE )
+#define FALSE	0
+#define TRUE	( !FALSE )
 #endif /* TRUE */
 
 #endif /* end _GLOBAL_H_ */
@@ -62,12 +62,12 @@ typedef unsigned char BYTE;
 
 /* The structure for storing SHS info */
 
-typedef struct 
+typedef struct
 {
-	UINT4 digest[ 5 ];            /* Message digest */
-	UINT4 countLo, countHi;       /* 64-bit bit count */
-	UINT4 data[ 16 ];             /* SHS data buffer */
-	int Endianness;
+    UINT4 digest[ 5 ];            /* Message digest */
+    UINT4 countLo, countHi;       /* 64-bit bit count */
+    UINT4 data[ 16 ];             /* SHS data buffer */
+    int Endianness;
 } SHA_CTX;
 
 /* Message digest functions */
@@ -191,8 +191,8 @@ void SHAInit(SHA_CTX *shsInfo)
    Note that this corrupts the shsInfo->data area */
 
 static void SHSTransform( digest, data )
-     UINT4 *digest, *data ;
-    {
+UINT4 *digest, *data ;
+{
     UINT4 A, B, C, D, E;     /* Local vars */
     UINT4 eData[ 16 ];       /* Expanded data */
 
@@ -295,7 +295,7 @@ static void SHSTransform( digest, data )
     digest[ 2 ] += C;
     digest[ 3 ] += D;
     digest[ 4 ] += E;
-    }
+}
 
 /* When run on a little-endian CPU we need to perform byte reversal on an
    array of long words. */
@@ -307,12 +307,12 @@ static void longReverse(UINT4 *buffer, int byteCount, int Endianness )
     if (Endianness==TRUE) return;
     byteCount /= sizeof( UINT4 );
     while( byteCount-- )
-        {
+    {
         value = *buffer;
         value = ( ( value & 0xFF00FF00L ) >> 8  ) | \
                 ( ( value & 0x00FF00FFL ) << 8 );
         *buffer++ = ( value << 16 ) | ( value >> 16 );
-        }
+    }
 }
 
 /* Update SHS for a block of data */
@@ -333,35 +333,35 @@ void SHAUpdate(SHA_CTX *shsInfo, BYTE *buffer, int count)
 
     /* Handle any leading odd-sized chunks */
     if( dataCount )
-        {
+    {
         BYTE *p = ( BYTE * ) shsInfo->data + dataCount;
 
         dataCount = SHS_DATASIZE - dataCount;
         if( count < dataCount )
-            {
+        {
             memcpy( p, buffer, count );
             return;
-            }
+        }
         memcpy( p, buffer, dataCount );
         longReverse( shsInfo->data, SHS_DATASIZE, shsInfo->Endianness);
         SHSTransform( shsInfo->digest, shsInfo->data );
         buffer += dataCount;
         count -= dataCount;
-        }
+    }
 
     /* Process data in SHS_DATASIZE chunks */
     while( count >= SHS_DATASIZE )
-        {
+    {
         memcpy( (POINTER)shsInfo->data, (POINTER)buffer, SHS_DATASIZE );
         longReverse( shsInfo->data, SHS_DATASIZE, shsInfo->Endianness );
         SHSTransform( shsInfo->digest, shsInfo->data );
         buffer += SHS_DATASIZE;
         count -= SHS_DATASIZE;
-        }
+    }
 
     /* Handle any remaining bytes of data. */
     memcpy( (POINTER)shsInfo->data, (POINTER)buffer, count );
-    }
+}
 
 /* Final wrapup - pad to SHS_DATASIZE-byte boundary with the bit pattern
    1 0* (64-bit count of bits processed, MSB-first) */
@@ -385,7 +385,7 @@ void SHAFinal(BYTE *output, SHA_CTX *shsInfo)
 
     /* Pad out to 56 mod 64 */
     if( count < 8 )
-        {
+    {
         /* Two lots of padding:  Pad the first block to 64 bytes */
         memset( dataPtr, 0, count );
         longReverse( shsInfo->data, SHS_DATASIZE, shsInfo->Endianness );
@@ -393,7 +393,7 @@ void SHAFinal(BYTE *output, SHA_CTX *shsInfo)
 
         /* Now fill the next block with 56 bytes */
         memset( (POINTER)shsInfo->data, 0, SHS_DATASIZE - 8 );
-        }
+    }
     else
         /* Pad block to 56 bytes */
         memset( dataPtr, 0, count - 8 );
@@ -405,30 +405,31 @@ void SHAFinal(BYTE *output, SHA_CTX *shsInfo)
     longReverse( shsInfo->data, SHS_DATASIZE - 8, shsInfo->Endianness );
     SHSTransform( shsInfo->digest, shsInfo->data );
 
-	/* Output to an array of bytes */
-	SHAtoByte(output, shsInfo->digest, SHS_DIGESTSIZE);
+    /* Output to an array of bytes */
+    SHAtoByte(output, shsInfo->digest, SHS_DIGESTSIZE);
 
-	/* Zeroise sensitive stuff */
-	memset((POINTER)shsInfo, 0, sizeof(shsInfo));
+    /* Zeroise sensitive stuff */
+    memset((POINTER)shsInfo, 0, sizeof(shsInfo));
 }
 
 static void SHAtoByte(BYTE *output, UINT4 *input, unsigned int len)
-{	/* Output SHA digest in byte array */
-	unsigned int i, j;
+{
+    /* Output SHA digest in byte array */
+    unsigned int i, j;
 
-	for(i = 0, j = 0; j < len; i++, j += 4) 
-	{
+    for(i = 0, j = 0; j < len; i++, j += 4)
+    {
         output[j+3] = (BYTE)( input[i]        & 0xff);
         output[j+2] = (BYTE)((input[i] >> 8 ) & 0xff);
         output[j+1] = (BYTE)((input[i] >> 16) & 0xff);
         output[j  ] = (BYTE)((input[i] >> 24) & 0xff);
-	}
+    }
 }
 
 
 //unsigned char digest[20];
 //unsigned char message[3] = {'a', 'b', 'c' };
-//unsigned char *mess56 = 
+//unsigned char *mess56 =
 //	"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
 
 /* Correct solutions from FIPS PUB 180-1 */
@@ -500,14 +501,14 @@ static void SHAtoByte(BYTE *output, UINT4 *input, unsigned int len)
 
 void endianTest(int *endian_ness)
 {
-	if((*(unsigned short *) ("#S") >> 8) == '#')
-	{
-		/* printf("Big endian = no change\n"); */
-		*endian_ness = !(0);
-	}
-	else
-	{
-		/* printf("Little endian = swap\n"); */
-		*endian_ness = 0;
-	}
+    if((*(unsigned short *) ("#S") >> 8) == '#')
+    {
+        /* printf("Big endian = no change\n"); */
+        *endian_ness = !(0);
+    }
+    else
+    {
+        /* printf("Little endian = swap\n"); */
+        *endian_ness = 0;
+    }
 }
