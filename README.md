@@ -1,15 +1,23 @@
-torrentcheck - catalog a .torrent file and optionally verify content hashes
-Usage: torrentcheck -t torrent-file [-p content-path] [-n] [-h] [-c] [-d]
-Options: -n suppresses progress count, -h shows all hash values,
-         -c or -d uses comma or dot formatted byte counts.
+# torrentcheck
+
+torrentcheck - catalog a `.torrent` file and optionally verify content hashes.
+
+Usage: `torrentcheck torrent-file [-p content-path] [-n] [-h] [-c] [-d]`
+
+Options:  
+`-n` suppresses progress count,  
+`-h` shows all hash values,  
+`-c` or `-d` uses comma or dot formatted byte counts.
+
 Returns 0 if successful, nonzero return code if errors found.
 
-Option: -sha1 [optional hash] acts as a simple SHA1 filter.
-If -sha1 is followed by a hex hash, the return code will be zero
+Option: `-sha1` [optional hash] acts as a simple SHA1 filter.
+
+If `-sha1` is followed by a hex hash, the return code will be zero
 on match and nonzero otherwise.
 
-Summary
--------
+### Summary
+
 This program is a command-line utility to catalog and verify torrent files.
 Run with only the -t option, it displays the metadata, name, and size of
 each file in the torrent. Run with the -t and -p options, it computes the
@@ -38,44 +46,56 @@ file, and prints the SHA1 hash. If a SHA1 hash is provided on the command line,
 it will return 0 if the hashes match or nonzero if they do not. This mode
 should agree with the output of "openssl dgst -sha1" or "digest -a sha1"
 
-Examples
---------
-torrentcheck -t \torrents\ubuntu-10.10-desktop-i386.iso.torrent
-torrentcheck -t \torrents\ubuntu-10.10-desktop-i386.iso.torrent -p \download
-torrentcheck -t \torrents\ubuntu-10.10-desktop-i386.iso.torrent -p \download && echo good
-torrentcheck -t \torrents\ubuntu-10.10-desktop-i386.iso.torrent -p \download || echo bad
-torrentcheck -t \torrents\ubuntu-10.10-desktop-i386.iso.torrent -p \download\ubuntu-10.10-desktop-i386.iso
+### Examples
+
+```shell
+torrentcheck \torrents\ubuntu-10.10-desktop-i386.iso.torrent
+torrentcheck \torrents\ubuntu-10.10-desktop-i386.iso.torrent -p \download
+torrentcheck \torrents\ubuntu-10.10-desktop-i386.iso.torrent -p \download && echo good
+torrentcheck \torrents\ubuntu-10.10-desktop-i386.iso.torrent -p \download || echo bad
+torrentcheck \torrents\ubuntu-10.10-desktop-i386.iso.torrent -p \download\ubuntu-10.10-desktop-i386.iso
 torrentcheck -sha1 < \download\ubuntu-10.10-desktop-i386.iso
 torrentcheck -sha1 b28bbd742aff85d21b9ad96bb45b67c2d133be99 < \download\ubuntu-10.10-desktop-i386.iso && echo good
+```
 (These are for Windows; use forward slashes in Unix/Linux)
 
-Automation and scripting
-------------------------
+### Automation and scripting
+
 Torrentcheck returns 0 in the Unix $? return code or Windows errorlevel
 if it successfully verifies a torrent, or nonzero return codes if it fails.
 
-If you have your torrents in \torrents and the downloaded files in \share,
-make a "bad" directory under \torrents, cd to \torrents, and run:
+If you have your torrents in `\torrents` and the downloaded files in `\share`,
+make a "bad" directory under `\torrents`, cd to `\torrents`, and run:
 
 (Windows)
-for %i in (*.torrent) do torrentcheck -t "%i" -p \share || move "%i" bad
+```shell
+for %i in (*.torrent) do torrentcheck "%i" -p \share || move "%i" bad
+```
+
 (Linux)
-for i in *.torrent; do torrentcheck -t "$i" -p /share || mv "$i" bad ; done
+```shell
+for i in *.torrent; do torrentcheck "$i" -p /share || mv "$i" bad ; done
+```
 
 This will check all the torrents, and move any that are not fully
-downloaded and correct into \torrents\bad.
+downloaded and correct into `\torrents\bad`.
 
 Run this command to generate a master list file with the contents of all your
 torrents. This file can be searched to find a particular file and which torrent
 it comes from.
 
 (Windows)
-for %i in (*.torrent) do torrentcheck -t "%i" >> masterlist.txt & echo. >> masterlist.txt
-(Linux)
-for i in *.torrent; do torrentcheck -t "$i" >> masterlist.txt ; echo >> masterlist.txt ; done
+```shell
+for %i in (*.torrent) do torrentcheck "%i" >> masterlist.txt & echo. >> masterlist.txt
+```
 
-Detailed description
---------------------
+(Linux)
+```shell
+for i in *.torrent; do torrentcheck "$i" >> masterlist.txt ; echo >> masterlist.txt ; done
+```
+
+### Detailed description
+
 BitTorrent is a file sharing system which uses a metadata file, usually with
 the .torrent extension, to identify a data file or group of files. Given the
 metadata file, a BitTorrent client can download and share the data files.
@@ -124,9 +144,9 @@ The SHA1 implementation used by torrentcheck was written by David Ireland,
 AM Kuchling, and Peter Gutmann. The source code does not contain a copyright
 notice, and this file is widely used on the Internet.
 
-Compiling
----------
-There is no makefile. The required gcc lines are at the top of the
-torrentcheck.c source file. The major catch in compiling is making 64-bit file
+### Compiling
+
+There is no makefile. The required `gcc` lines are at the top of the
+`torrentcheck.c` source file. The major catch in compiling is making 64-bit file
 I/O work. It is tested on Windows, Linux, and Solaris, but you may have to
 experiment with compiler options to get 64-bit ftell and fseek working.

@@ -1,9 +1,10 @@
+PROJECT := torrentcheck
 CFLAGS := -O
 
-all: torrentcheck
+all: $(PROJECT)
 
 clean:
-	rm *.o
+	rm *.o $(PROJECT)
 
-torrentcheck: torrentcheck.o sha1.o
+$(PROJECT): torrentcheck.o sha1.o
 	$(CC) -o $@ $^ $(CFLAGS)

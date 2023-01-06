@@ -267,6 +267,13 @@ void backspaceProgressLine(int *showProgressChars) { // remove the progress line
 }
 
 
+void GetDataString(BYTE* benstr,int benstrOffset,BYTE** stringBegin)
+{
+    *stringBegin = benstr + benstrOffset;
+    return;
+}
+
+
 int sha1Filter(char* compareHash) {
 	BYTE inputBuffer[inputBufLen];
 	SHA_CTX sha1ctx;
@@ -334,6 +341,9 @@ int main(int argc,char* argv[]) {
 	int numPieces = -1;
 	int numFiles = 0;
 	INT64 pieceLen = -1;
+    BYTE* info = NULL;
+    int infoEnd = -1;
+    int infoLen = -1;
 	BYTE* fileName = NULL;
 	int fileNameLen = -1;
 	char* filePath;
@@ -470,6 +480,7 @@ int main(int argc,char* argv[]) {
 		printf("Unable to parse torrent metadata file %s\n",torrentFile);
 		return 2;
 	}
+    infoEnd = torrentLen;
 
 	torrentInfo = beFindInDict(torrent,torrentLen,0,"info");
 	if (torrentInfo < 0) {
@@ -491,11 +502,6 @@ int main(int argc,char* argv[]) {
 			printf("Unable to read \"name\" from torrent\n");
 			return 2;
 		}
-	}
-
-	ofs = beFindInDict(torrent,torrentLen,torrentInfo,"private");
-	if (ofs >= 0) {
- 		ofs = beParseInteger(torrent,torrentLen,ofs,&torrentPrivate);
 	}
 
 	ofs = beFindInDict(torrent,torrentLen,torrentInfo,"length");
@@ -637,6 +643,13 @@ int main(int argc,char* argv[]) {
 		printf("Unable to read \"pieces\" from torrent\n");
 		return 2;
 	}
+    if (ofs > 0) infoEnd = ofs;
+
+	ofs = beFindInDict(torrent,torrentLen,torrentInfo,"private");
+	if (ofs >= 0) {
+ 		ofs = beParseInteger(torrent,torrentLen,ofs,&torrentPrivate);
+	}
+    if (ofs > 0) infoEnd = ofs;
 
 	numPieces = pieceListLen / SHA1_LEN;
 	if (numPieces * SHA1_LEN != pieceListLen) {
@@ -653,11 +666,24 @@ int main(int argc,char* argv[]) {
 		return 2;
 	}
 
+    infoLen = infoEnd - torrentInfo + 1;
+    GetDataString(torrent,torrentInfo,&info);
+
 	printf("Torrent file  : %s\n",torrentFile);
 	printf("Metadata info : %i bytes, %i piece%s, %s bytes per piece%s\n",torrentLen,numPieces,((numPieces==1)?"":"s"),print64(pieceLen,p64Buf1,useCommaDot),((torrentPrivate==1)?", private":""));
 	printf("Torrent name  : ");
 	fwrite(rootName,rootNameLen,1,stdout);
 	printf("\n");
+//    printf("Info length   : %d\n", infoLen);
+    SHAInit(&sha1ctx);
+    SHAUpdate(&sha1ctx, info, infoLen);
+    SHAFinal(sha1hash,&sha1ctx);
+    printf("Torrent hash  : %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+           (int)sha1hash[0], (int)sha1hash[1], (int)sha1hash[2], (int)sha1hash[3],
+           (int)sha1hash[4], (int)sha1hash[5], (int)sha1hash[6], (int)sha1hash[7],
+           (int)sha1hash[8], (int)sha1hash[9], (int)sha1hash[10], (int)sha1hash[11],
+           (int)sha1hash[12], (int)sha1hash[13], (int)sha1hash[14], (int)sha1hash[15],
+           (int)sha1hash[16], (int)sha1hash[17], (int)sha1hash[18], (int)sha1hash[19]);
 
 	if (multiFileTorrent) {
 		printf("Content info  : %i file%s, %s bytes\n",numFiles,((numFiles==1)?"":"s"),print64(totalBytes,p64Buf1,useCommaDot));
