@@ -8,8 +8,8 @@ all: $(PROJECT)
 $(PROJECT): $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@
 
-%.c: %.o
-	$(CC) -c $(CFLAGS) $^ -o $@
+%.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
 	$(RM) $(OBJS) $(PROJECT)
