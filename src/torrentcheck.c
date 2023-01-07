@@ -16,7 +16,9 @@
 #include <malloc.h>
 #include <string.h>
 
+#ifdef ICONV_IMPLEMENTATION
 #include <iconv.h>
+#endif
 
 // Begin required for SHA1
 typedef unsigned char *POINTER;
@@ -163,17 +165,17 @@ int beParseString(BYTE* benstr,int benstrLen,int benstrOffset,BYTE** stringBegin
 
 //// Return offset of an element in a list, or -1 if not found
 //int beFindInList(BYTE* benstr,int benstrLen,int benstrOffset,int listIndex) {
-//	int i;
-//	if ((benstrOffset < 0)||(benstrOffset >= benstrLen)) return (-1);
-//	if (benstr[benstrOffset] != 'l') return (-1);
-//	benstrOffset++;
-//	if (benstr[benstrOffset] == 'e') return (-1);
-//	for(i=0;i<listIndex;i++) {
-//		benstrOffset = beStepOver(benstr,benstrLen,benstrOffset);
-//		if ((benstrOffset < 0)||(benstrOffset >= benstrLen)) return (-1);
-//	}
-//	if (benstr[benstrOffset] == 'e') return (-1);
-//	return (benstrOffset);
+//  int i;
+//  if ((benstrOffset < 0)||(benstrOffset >= benstrLen)) return (-1);
+//  if (benstr[benstrOffset] != 'l') return (-1);
+//  benstrOffset++;
+//  if (benstr[benstrOffset] == 'e') return (-1);
+//  for(i=0;i<listIndex;i++) {
+//      benstrOffset = beStepOver(benstr,benstrLen,benstrOffset);
+//      if ((benstrOffset < 0)||(benstrOffset >= benstrLen)) return (-1);
+//  }
+//  if (benstr[benstrOffset] == 'e') return (-1);
+//  return (benstrOffset);
 //}
 
 
@@ -442,7 +444,9 @@ int main(int argc,char* argv[])
     SHA_CTX sha1ctx;
     //
     char* encoding = NULL;
+#ifdef ICONV_IMPLEMENTATION
     iconv_t convDescriptor;
+#endif
     char *inPtr, *outPtr;
     size_t inBytesLeft, outBytesLeft;
     char filePathUTF8[1024];
@@ -709,6 +713,7 @@ int main(int argc,char* argv[])
             {
                 inPtr = filePath, outPtr = filePathUTF8;
                 inBytesLeft = strlen(filePath), outBytesLeft = 1024;
+#ifdef ICONV_IMPLEMENTATION
                 if((convDescriptor = iconv_open("utf-8", encoding)) == (iconv_t)-1)
                 {
                     return -1;
@@ -738,6 +743,11 @@ int main(int argc,char* argv[])
                 }
                 memcpy(filePath, filePathUTF8, filePathUTF8Len);
                 filePath[filePathUTF8Len] = '\0';
+#else
+                outBytesLeft = inBytesLeft;
+                outPtr = inPtr;
+                filePathUTF8Len = filePath;
+#endif
             }
 
             fileRecordList[currentFile].filePath = malloc(strlen(filePath)+1);
