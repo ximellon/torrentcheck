@@ -1,5 +1,5 @@
 PROJECT := torrentcheck
-CFLAGS := -O
+CFLAGS := -O -DICONV_IMPLEMENTATION
 OBJS := src/torrentcheck.o src/sha1.o
 RM := rm -f
 
